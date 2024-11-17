@@ -1,0 +1,4 @@
+DROP TABLE IF EXISTS playlist_entries;
+DROP TABLE IF EXISTS playlist;
+DROP TABLE IF EXISTS songs;
+DROP TABLE IF EXISTS users;
