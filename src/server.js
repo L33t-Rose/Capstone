@@ -40,7 +40,7 @@ app.get("/randomsong", async function (req, res) {
     "SELECT * FROM songs ORDER BY RANDOM() LIMIT $1;",
     [limit]
   );
-  res.json(rows);
+  res.json(rows ?? { message: "Something went wrong" });
 });
 
 // TODO: Setup user authentication
@@ -58,7 +58,7 @@ app.post("/user", async function (req, res) {
     [crypto.randomUUID(), data.username]
   );
   console.log(result);
-  res.json(result.rows[0]);
+  res.json(result?.rows[0] ?? { message: "Something went wrong!" });
 });
 
 // app.post("/playlist/create",async function(req,res){
@@ -81,19 +81,15 @@ app.post("/playlists", async function (req, res) {
     [crypto.randomUUID(), req.body["user_id"], req.body["playlist_name"]]
   );
   console.log(result);
-  res.json(result.rows[0]);
+  res.json(result?.rows[0] ?? { message: "Something went wrong" });
 });
 
 // For now this is how we gen the playlist.
 // This way if I want to regenerate all of the songs I can just hit this endpoint
 app.put("/playlists/:playlistid", async function (req, res) {
-  // const isValidReq = "user_id" in req.body && req.body["user_id"];
-  // if (!isValidReq) {
-  //   res.status = 400;
-  //   return res.json({ message: "Invalid Request" });
-  // }
+  // TODO: Add user authentication and authorization
   let result;
-  try{
+  try {
     result = await db.query(
       `
       INSERT INTO playlist_entries(song_id, playlist_id, index)
@@ -107,26 +103,44 @@ app.put("/playlists/:playlistid", async function (req, res) {
     );
     console.log(result);
     res.json({ message: "SUCCESS" });
-  }catch(e){
+  } catch (e) {
     res.status = 400;
-    console.log(e,result);
-    res.json({message:"Something went wrong"});
+    console.log(e, result);
+    res.json({ message: "Something went wrong" });
   }
 });
 
 app.get("/playlists/:playlistid", async function (req, res) {
   let result;
-  try{
-    result= await db.query(`
+  try {
+    result = await db.query(
+      `
     SELECT songs.* FROM playlist_entries
         JOIN songs ON playlist_entries.song_id = songs.spotify_id
-    WHERE playlist_id = $1;`,[req.params.playlistid]);
+    WHERE playlist_id = $1;`,
+      [req.params.playlistid]
+    );
     console.log(result);
-    res.json(result.rows)
-  }catch(e){
-    res.status=400;
-    console.log(e,result);
-    res.json({message:"Something went wrong"})
+    res.json(result.rows);
+  } catch (e) {
+    res.status = 400;
+    console.log(e, result);
+    res.json({ message: "Something went wrong" });
+  }
+});
+
+app.delete("/playlists/:playlistid", async function (req, res) {
+  let result;
+  try {
+    result = await db.query(
+      "DELETE FROM playlist WHERE playlist_id=$1 RETURNING *;",
+      [req.params.playlistid]
+    );
+    res.json(result.rows);
+  } catch (e) {
+    res.status = 400;
+    console.log(e, result);
+    res.json({ message: "Something went wrong" });
   }
 });
 
